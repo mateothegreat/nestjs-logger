@@ -8,6 +8,14 @@
 npm install @mateothegreat/nestjs-logger
 ```
 
+### Use local elasticsearch + kibana
+
+```bash
+docker-compose up -d
+```
+
+Then go to kibana at http://localhost:5601 to see your logs.
+
 ## Setup
 
 ```typescript
