@@ -1,0 +1,73 @@
+version: '3.6'
+
+services:
+  logger-elasticsearch:
+    platform: "linux/x86_64"
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    container_name: "logger-elasticsearch"
+    hostname: "elasticsearch"
+    ports:
+      - 9200:9200
+      - 9200
+    healthcheck:
+      test: [ "CMD", "curl","-skf" ,"http://localhost:9200/_cat/health" ]
+      interval: 15s
+    environment:
+      node.name: "elasticsearch"
+      ES_JAVA_OPTS: "-Xmx500m -Xms500m -Des.logger.level=INFO"
+      discovery-type: "single-node"
+      cluster.initial_master_nodes: "elasticsearch"
+      ELASTIC_USERNAME: "elastic"
+      ELASTIC_PASSWORD: "elastic"
+      ELASTIC_SSL_ENABLED: "true"
+      xpack.security.enabled: "false"
+    deploy:
+      resources:
+        limits:
+          memory: 700M
+        reservations:
+          memory: 600M
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - logger-elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - logger
+
+  logger-kibana:
+    platform: "linux/x86_64"
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    container_name: "logger-kibana"
+    hostname: "kibana"
+    deploy:
+      resources:
+        limits:
+          cpus: 0.5
+          memory: 700M
+    environment:
+      ELASTICSEARCH_HOSTS: "http://logger-elasticsearch:9200"
+      ELASTICSEARCH_SSL_VERIFICATIONMODE: "none"
+      ELASTICSEARCH_USERNAME: "kibana_system"
+      ELASTICSEARCH_PASSWORD: "elastic"
+      XPACK_SECURITY_ENABLED: "false"
+    ports:
+      - 5601:5601
+    healthcheck:
+      interval: 15s
+      test: [ "CMD", "curl", "-s", "-f", "http://localhost:5601/login" ]
+      retries: 10
+    networks:
+      - logger
+    depends_on:
+      - logger-elasticsearch
+
+volumes:
+  logger-elasticsearch:
+
+networks:
+  logger:
